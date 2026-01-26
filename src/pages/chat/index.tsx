@@ -1,20 +1,42 @@
 import React, { useEffect, useState } from "react";
 import {
     Card, Tag, Typography, Badge, Button, Spin,
-    Row, Col, Space, Statistic, Divider
+    Row, Col, Space, Statistic, Divider, Avatar, Tooltip
 } from "antd";
 import {
-    MessageOutlined,
     ArrowRightOutlined,
     GlobalOutlined,
     CustomerServiceOutlined,
-    SyncOutlined
+    UserOutlined,
+    CalendarOutlined,
+    CrownOutlined,
+    InfoCircleOutlined
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { ChatSession } from "@/utils/types/chat";
 import { ChatService } from "@/api/chatApi";
 
 const { Title, Text } = Typography;
+
+// Helper để định dạng màu sắc theo hạng thành viên
+const getMembershipColor = (level: string) => {
+    switch (level?.toUpperCase()) {
+        case 'GOLD': return { color: '#faad14', bg: '#fffbe6', border: '#ffe58f', icon: <CrownOutlined /> };
+        case 'SILVER': return { color: '#8c8c8c', bg: '#f5f5f5', border: '#d9d9d9', icon: <UserOutlined /> };
+        case 'PLATINUM': return { color: '#722ed1', bg: '#f9f0ff', border: '#d3adf7', icon: <CrownOutlined /> };
+        default: return { color: '#1677ff', bg: '#e6f4ff', border: '#91caff', icon: <UserOutlined /> };
+    }
+};
+
+// Helper để định dạng trạng thái đặt phòng
+const getBookingTag = (status: string) => {
+    switch (status) {
+        case 'ACTIVE': return <Tag color="success">ĐANG Ở (ACTIVE)</Tag>;
+        case 'PAST': return <Tag color="default">ĐÃ TRẢ PHÒNG (PAST)</Tag>;
+        case 'CANCELLED': return <Tag color="error">ĐÃ HỦY (CANCELLED)</Tag>;
+        default: return <Tag color="warning">CHƯA CÓ ĐẶT PHÒNG</Tag>;
+    }
+};
 
 export default function ChatSessionPage() {
     const [sessions, setSessions] = useState<ChatSession[]>([]);
@@ -43,111 +65,94 @@ export default function ChatSessionPage() {
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
                 <Space direction="vertical" align="center">
                     <Spin size="large" />
-                    <Text type="secondary">Đang tải danh sách phòng chat...</Text>
+                    <Text type="secondary">Đang tải danh sách điều phối...</Text>
                 </Space>
             </div>
         );
     }
 
     return (
-        <div style={{ padding: '24px', width: '100%', margin: '0 auto' }}>
+        <div style={{ padding: '24px', backgroundColor: '#f5f7fa', minHeight: '100vh' }}>
             {/* Header Section */}
-            <Card style={{ marginBottom: 24, borderRadius: '12px', border: 'none', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+            <Card style={{ marginBottom: 24, borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
                 <Row justify="space-between" align="middle">
-                    <Col xs={24} sm={16}>
+                    <Col>
                         <Space size={16}>
-                            <div style={{
-                                padding: '12px',
-                                background: '#e6f4ff',
-                                borderRadius: '12px',
-                                color: '#1677ff',
-                                fontSize: '24px'
-                            }}>
-                                <CustomerServiceOutlined />
-                            </div>
+                            <Avatar size={54} icon={<CustomerServiceOutlined />} style={{ backgroundColor: '#1677ff' }} />
                             <div>
-                                <Title level={3} style={{ margin: 0 }}>Trung tâm Điều phối Chat</Title>
-                                <Text type="secondary">Quản lý và hỗ trợ khách hàng theo thời gian thực</Text>
+                                <Title level={2} style={{ margin: 0 }}>Trung tâm Điều phối</Title>
+                                <Text type="secondary">Phân loại và hỗ trợ khách hàng theo thứ tự ưu tiên</Text>
                             </div>
                         </Space>
                     </Col>
-                    <Col xs={24} sm={8} style={{ textAlign: 'right', marginTop: '16px' }}>
-                        <Statistic
-                            title="Phòng đang hoạt động"
-                            value={sessions.length}
-                            prefix={<Badge status="processing" color="#52c41a" />}
-                            valueStyle={{ color: '#52c41a', fontWeight: 'bold' }}
+                    <Col>
+                        <Statistic 
+                            title="Yêu cầu chờ xử lý" 
+                            value={sessions.length} 
+                            valueStyle={{ color: '#cf1322', fontWeight: 'bold' }} 
                         />
                     </Col>
                 </Row>
             </Card>
 
-            {/* Session Grid */}
-            <Row gutter={[20, 20]} justify="start">
-                {sessions.length === 0 ? (
-                    <Col span={24}>
-                        <Card style={{ textAlign: 'center', padding: '40px', borderRadius: '12px' }}>
-                            <MessageOutlined style={{ fontSize: '48px', color: '#d9d9d9', marginBottom: '16px' }} />
-                            <br />
-                            <Text type="secondary">Hiện tại không có yêu cầu hỗ trợ nào.</Text>
-                        </Card>
-                    </Col>
-                ) : (
-                    sessions.map((s) => (
-                        <Col
-                            key={s.id}
-                            xs={24}   
-                            sm={12}    
-                            md={12}    
-                            lg={8}     
-                            xl={8}     
-                            xxl={6}    
-                        >
+            <Row gutter={[20, 20]}>
+                {sessions.map((s) => {
+                    const memberTheme = getMembershipColor(s.membershipLevel|| "");
+                    return (
+                        <Col key={s.id} xs={24} sm={12} lg={8} xl={6}>
                             <Card
                                 hoverable
-                                style={{ borderRadius: '12px', overflow: 'hidden' , width: '100%', minWidth: '300px'}}
+                                style={{ borderRadius: '16px', borderTop: `4px solid ${memberTheme.color}` }}
                                 bodyStyle={{ padding: '20px' }}
                                 actions={[
-                                    <Button
-                                        type="link"
+                                    <Button 
+                                        type="primary" 
+                                        block 
                                         icon={<ArrowRightOutlined />}
-                                        onClick={() => navigate(`/chat/${s.sessionCode}`)}
-                                        style={{ fontWeight: 600 }}
+                                        onClick={() => navigate(`/chat/${s.sessionCode}`, { state: { session: s } })}
+                                        style={{ width: '90%', borderRadius: '8px' }}
                                     >
                                         VÀO HỖ TRỢ
                                     </Button>
                                 ]}
                             >
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
-                                    <Tag color="blue" style={{ borderRadius: '4px', margin: 0 }}>
-                                        #{s.sessionCode.split('_')[1] || s.sessionCode}
-                                    </Tag>
-                                    <Badge status="success" text={<Text type="secondary" style={{ fontSize: '12px' }}>Live</Text>} />
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+                                    <Space direction="vertical" size={0}>
+                                        <Text strong style={{ fontSize: '16px', display: 'block' }}>
+                                            {s.customerName || "Khách vãng lai"}
+                                        </Text>
+                                        <Text type="secondary" style={{ fontSize: '12px' }}>#{s.bookingCode || 'N/A'}</Text>
+                                    </Space>
+                                    <Tooltip title={`Hạng thành viên: ${s.membershipLevel || 'MEMBER'}`}>
+                                        <Tag color={memberTheme.color} style={{ margin: 0, borderRadius: '10px' }}>
+                                            {memberTheme.icon} {s.membershipLevel}
+                                        </Tag>
+                                    </Tooltip>
                                 </div>
 
-                                <Title level={5} style={{ marginBottom: 16 }}>
-                                    Khách hàng: {s.sessionCode.startsWith("ROOM") ? `Phòng ${s.sessionCode.split('_')[1]}` : "Khách vãng lai"}
-                                </Title>
-
-                                <Divider style={{ margin: '12px 0' }} />
-
-                                <Space direction="vertical" style={{ width: '100%' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                        <GlobalOutlined style={{ color: '#8c8c8c' }} />
-                                        <Text type="secondary">Ngôn ngữ:</Text>
-                                        <Tag color="geekblue" style={{ border: 'none' }}>
-                                            {s.clientLang?.toUpperCase() || "EN"}
-                                        </Tag>
+                                <Space direction="vertical" style={{ width: '100%' }} size={10}>
+                                    <div style={{ background: '#f8f9fa', padding: '8px 12px', borderRadius: '8px' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                                            <Text type="secondary"><CalendarOutlined /> Booking:</Text>
+                                            {getBookingTag(s.bookingStatus)}
+                                        </div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                            <Text type="secondary"><GlobalOutlined /> Ngôn ngữ:</Text>
+                                            <Tag color="geekblue" style={{ margin: 0 }}>{s.clientLang?.toUpperCase() || 'EN'}</Tag>
+                                        </div>
                                     </div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                        <SyncOutlined spin style={{ color: '#52c41a' }} />
-                                        <Text type="secondary">Trạng thái: Đang chờ</Text>
+
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <Text type="secondary" style={{ fontSize: '12px' }}>
+                                            <InfoCircleOutlined /> Cập nhật: {new Date(s.lastMessageAt || s.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        </Text>
+                                        <Badge status="processing" text="Online" />
                                     </div>
                                 </Space>
                             </Card>
                         </Col>
-                    ))
-                )}
+                    );
+                })}
             </Row>
         </div>
     );

@@ -1,5 +1,6 @@
 export type SenderType = "CLIENT" | "STAFF" | "BOT";
 export type SessionStatus = "OPEN" | "CLOSED";
+export type BookingStatus = "NONE" | "PAST" | "ACTIVE" | "CANCELLED";
 
 export interface ChatSession {
     id: number;
@@ -12,6 +13,13 @@ export interface ChatSession {
     assignedStaffId?: number | null;
     botEnabled: boolean;
 
+    customerId?: number | null;
+    customerName?: string | null;
+    membershipLevel?: string | null; 
+
+    bookingStatus: BookingStatus;
+    bookingCode?: string | null;
+
     createdAt: string;
     lastMessageAt?: string | null;
 }
@@ -19,11 +27,8 @@ export interface ChatSession {
 export interface ChatMessage {
     id: number;
     session: ChatSession;
-
     sender: SenderType;
-
     originalText: string;
     translatedText: string;
-
     createdAt: string;
 }

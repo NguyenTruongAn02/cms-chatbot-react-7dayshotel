@@ -1,42 +1,38 @@
 import React, { useEffect, useState, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom"; // SỬA: Dùng react-router-dom
-import { Input, Button, Avatar, Typography, Modal, message, Space, Badge } from "antd";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { Input, Button, Avatar, Typography, Modal, message, Space, Badge, Tag, Divider, Card, Row, Col, Image } from "antd";
 import {
     SendOutlined,
-    CloseCircleOutlined,
     UserOutlined,
     RobotOutlined,
-    LeftOutlined
+    LeftOutlined,
+    CrownOutlined,
+    CalendarOutlined,
+    HomeOutlined,
+    GlobalOutlined
 } from "@ant-design/icons";
-import { ChatMessage } from "@/utils/types/chat";
+import { ChatMessage, ChatSession } from "@/utils/types/chat";
 import { ChatService } from "@/api/chatApi";
 import { getSocket } from "@/utils/socket";
 
 const { Text, Title } = Typography;
 
 export default function ChatRoomPage() {
-    const params = useParams<string>();
-    const sessionCode = params.sessionCode;
+    const { sessionCode } = useParams() as { sessionCode?: string };
     const navigate = useNavigate();
+    const location = useLocation();
+
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [input, setInput] = useState("");
-    const [realId, setRealId] = useState<number | null>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
     const socket = getSocket();
+    const initialSession = location.state?.session as ChatSession | null;
 
-    const SERVICE_AUTO_IMAGES: Record<string, string> = {
-        "[Yêu cầu hỗ trợ: 🍽️ Order Food]": "https://insacmauviet.vn/Uploads/682.gif",
-        "[Yêu cầu hỗ trợ: 🧹 Cleaning]": "https://hpmed.vn/Files/419/kinh-doanh-spa/Menu-spa-can-cung-cap-thong-tin-chinh-xac.jpg",
-        "[Yêu cầu hỗ trợ: 🧺 Laundry]": "https://incaominh.com/wp-content/uploads/2024/04/mau-bang-gia-dich-vu-de-ban.jpg"
-    };
+    const [sessionInfo, setSessionInfo] = useState<ChatSession | null>(initialSession);
 
-    // Tự động cuộn xuống khi có tin nhắn mới
     useEffect(() => {
         if (scrollRef.current) {
-            scrollRef.current.scrollTo({
-                top: scrollRef.current.scrollHeight,
-                behavior: "smooth"
-            });
+            scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
         }
     }, [messages]);
 
@@ -46,31 +42,19 @@ export default function ChatRoomPage() {
         socket.emit("staff_join");
         socket.emit("join_session", { sessionCode, clientIdentifier: "STAFF_DASHBOARD" });
 
-        socket.on("session_joined", (payload) => {
+        socket.on("session_joined", (payload: { messages: ChatMessage[], session: ChatSession }) => {
             setMessages(payload.messages);
-            setRealId(payload.sessionId);
         });
 
         socket.on("receive_message", (msg: ChatMessage) => {
             setMessages((prev) => [...prev, msg]);
-
-            // Logic phản hồi ảnh tự động
-            if (msg.sender === "CLIENT") {
-                const autoImageUrl = SERVICE_AUTO_IMAGES[msg.originalText];
-                if (autoImageUrl) {
-                    socket.emit("send_message", {
-                        sessionCode,
-                        content: `IMAGE_URL:${autoImageUrl}`
-                    });
-                }
-            }
         });
 
         return () => {
             socket.off("session_joined");
             socket.off("receive_message");
         };
-    }, [sessionCode]);
+    }, [sessionCode, socket]);
 
     const sendMessage = () => {
         if (!input.trim() || !sessionCode) return;
@@ -78,26 +62,26 @@ export default function ChatRoomPage() {
         setInput("");
     };
 
-    const handleLeaveRoom = () => {
-        navigate("/chat");
+    // Hàm render nội dung tin nhắn (Check xem là Text hay Ảnh)
+    const renderMessageContent = (text: string) => {
+        if (text.startsWith("[IMG_URL]:")) {
+            const url = text.replace("[IMG_URL]:", "").trim();
+            return <Image src={url} width={200} style={{ borderRadius: '8px' }} placeholder={true} />;
+        }
+        return text;
     };
 
     const handleCloseRoom = () => {
-        if (!realId) return message.warning("Không tìm thấy ID phiên chat!");
-
+        if (!sessionInfo?.id) return message.warning("Không tìm thấy ID phiên chat!");
         Modal.confirm({
-            title: 'Kết thúc phiên hỗ trợ?',
-            content: `Xác nhận đóng phiên chat ${sessionCode}.`,
+            title: 'Kết thúc hỗ trợ?',
+            content: `Xác nhận đóng phiên chat của khách ${sessionInfo?.customerName || sessionCode}.`,
             okText: 'Đóng phòng',
             okType: 'danger',
             onOk: async () => {
                 try {
-                    await ChatService.closeSession(realId);
-                    socket.emit("send_message", {
-                        sessionCode: sessionCode,
-                        content: "[SYSTEM]: Phiên hỗ trợ đã kết thúc."
-                    });
-                    message.success("Đã đóng phòng.");
+                    await ChatService.closeSession(sessionInfo.id);
+                    socket.emit("send_message", { sessionCode, content: "[SYSTEM]: Phiên hỗ trợ đã kết thúc." });
                     navigate("/chat");
                 } catch (error) {
                     message.error("Lỗi khi đóng phòng!");
@@ -106,100 +90,119 @@ export default function ChatRoomPage() {
         });
     };
 
+    const renderMemberTag = () => {
+        const level = sessionInfo?.membershipLevel?.toUpperCase();
+        if (level === 'GOLD') return <Tag color="gold" icon={<CrownOutlined />}>GOLD</Tag>;
+        if (level === 'SILVER') return <Tag color="default">SILVER</Tag>;
+        return <Tag color="blue">MEMBER</Tag>;
+    };
+
+    
+
     return (
-        <div style={{
-            height: 'calc(100vh - 120px)',
-            display: 'flex',
-            flexDirection: 'column',
-            background: '#f5f5f5',
-            borderRadius: '16px',
-            overflow: 'hidden',
-            border: '1px solid #e8e8e8'
-        }}>
-            {/* Header */}
-            <div style={{ padding: '16px 24px', background: '#fff', borderBottom: '1px solid #f0f0f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Space size={12}>
-                    <Button icon={<LeftOutlined />} type="text" onClick={handleLeaveRoom} />
-                    <Avatar style={{ backgroundColor: '#1677ff' }} icon={<UserOutlined />} />
-                    <div>
-                        <Title level={5} style={{ margin: 0 }}>Phòng: {sessionCode}</Title>
-                        <Badge status="success" color="green" text="Đang trực tuyến" />
+        <Row gutter={[16, 16]} style={{ height: 'calc(100vh - 120px)', margin: 0 }}>
+
+            <Col xs={24} lg={17} xl={18} style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    background: '#fff',
+                    borderRadius: '16px',
+                    overflow: 'hidden',
+                    border: '1px solid #e8e8e8',
+                    height: '100%'
+                }}>
+                    {/* Header */}
+                    <div style={{ padding: '12px 16px', borderBottom: '1px solid #f0f0f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Space>
+                            <Button icon={<LeftOutlined />} type="text" onClick={() => navigate("/chat")} />
+                            <Avatar size="small" style={{ backgroundColor: sessionInfo?.membershipLevel === 'GOLD' ? '#faad14' : '#1677ff' }} icon={<UserOutlined />} />
+                            <div>
+                                <Text strong style={{ fontSize: '14px', display: 'block', lineHeight: '1.2' }}>
+                                    {sessionInfo?.customerName || "Khách vãng lai"}
+                                </Text>
+                                <Badge status="success" text={<Text style={{ fontSize: '10px' }} type="secondary">Online</Text>} />
+                            </div>
+                        </Space>
+                        <Button size="small" danger onClick={handleCloseRoom}>Kết thúc</Button>
                     </div>
-                </Space>
-                <Space>
-                    <Button onClick={handleLeaveRoom}>Thoát</Button>
-                    <Button danger type="primary" onClick={handleCloseRoom}>Kết thúc hỗ trợ</Button>
-                </Space>
-            </div>
 
-            {/* Chat Body */}
-            <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                {messages.map((m, idx) => {
-                    const isStaff = m.sender === "STAFF" || m.sender === "BOT";
-                    const isImage = m.originalText?.startsWith("IMAGE_URL:");
-                    const imageUrl = isImage ? m.originalText.replace("IMAGE_URL:", "") : "";
-
-                    return (
-                        <div key={idx} style={{
-                            display: 'flex',
-                            justifyContent: isStaff ? 'flex-end' : 'flex-start',
-                            width: '100%'
-                        }}>
-                            <div style={{
-                                display: 'flex',
-                                flexDirection: isStaff ? 'row-reverse' : 'row',
-                                gap: '10px',
-                                maxWidth: '70%'
-                            }}>
-                                <Avatar
-                                    icon={isStaff ? <RobotOutlined /> : <UserOutlined />}
-                                    style={{ backgroundColor: isStaff ? '#1677ff' : '#8c8c8c', flexShrink: 0 }}
-                                />
-                                <div style={{ textAlign: isStaff ? 'right' : 'left' }}>
+                    {/* Body */}
+                    <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: '16px', background: '#f9f9f9', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        {messages.map((m, idx) => {
+                            const isStaff = m.sender === "STAFF" || m.sender === "BOT";
+                            return (
+                                <div key={idx} style={{ alignSelf: isStaff ? 'flex-end' : 'flex-start', maxWidth: '85%' }}>
                                     <div style={{
-                                        padding: '10px 16px',
+                                        padding: '8px 12px',
                                         borderRadius: '12px',
                                         background: isStaff ? '#1677ff' : '#fff',
                                         color: isStaff ? '#fff' : '#000',
-                                        boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-                                        border: isStaff ? 'none' : '1px solid #e8e8e8'
+                                        boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                                        border: isStaff ? 'none' : '1px solid #eee'
                                     }}>
-                                        {isImage ? (
-                                            <img src={imageUrl} alt="service" style={{ maxWidth: '200px', borderRadius: '8px' }} />
-                                        ) : (
-                                            <>
-                                                <div style={{ fontWeight: 500 }}>{m.originalText}</div>
-                                                {m.translatedText && (
-                                                    <div style={{ fontSize: '11px', borderTop: '1px solid rgba(255,255,255,0.2)', marginTop: 4, paddingTop: 4, fontStyle: 'italic' }}>
-                                                        Dịch: {m.translatedText}
-                                                    </div>
-                                                )}
-                                            </>
+                                        <div>{renderMessageContent(m.originalText)}</div>
+                                        {m.translatedText && (
+                                            <div style={{ fontSize: '11px', opacity: 0.8, marginTop: 4, borderTop: '1px solid rgba(255,255,255,0.2)', paddingTop: 4 }}>
+                                                <i>{m.translatedText}</i>
+                                            </div>
                                         )}
                                     </div>
-                                    <Text type="secondary" style={{ fontSize: '10px' }}>
-                                        {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                    </Text>
                                 </div>
-                            </div>
-                        </div>
-                    );
-                })}
-            </div>
+                            );
+                        })}
+                    </div>
 
-            {/* Input Footer */}
-            <div style={{ padding: '20px 24px', background: '#fff', borderTop: '1px solid #f0f0f0' }}>
-                <Space.Compact style={{ width: '100%' }}>
-                    <Input
-                        placeholder="Nhập tin nhắn..."
-                        size="large"
-                        value={input}
-                        onChange={e => setInput(e.target.value)}
-                        onPressEnter={sendMessage}
-                    />
-                    <Button type="primary" size="large" icon={<SendOutlined />} onClick={sendMessage} />
-                </Space.Compact>
-            </div>
-        </div>
+                    {/* Input */}
+                    <div style={{ padding: '12px 16px', background: '#fff' }}>
+                        <Space.Compact style={{ width: '100%' }}>
+                            <Input
+                                placeholder="Nhập tin nhắn..."
+                                value={input}
+                                onChange={e => setInput(e.target.value)}
+                                onPressEnter={sendMessage}
+                            />
+                            <Button type="primary" icon={<SendOutlined />} onClick={sendMessage} />
+                        </Space.Compact>
+                    </div>
+                </div>
+            </Col>
+
+            <Col xs={24} lg={7} xl={6} style={{ height: '100%', overflowY: 'auto' }}>
+                <Card title="Thông tin khách hàng" bordered={false} style={{ borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
+                    <Space direction="vertical" style={{ width: '100%' }} size={12}>
+                        <div style={{ textAlign: 'center' }}>
+                            <Avatar size={48} icon={<UserOutlined />} style={{ backgroundColor: '#f0f0f0', color: '#bfbfbf' }} />
+                            <Title level={5} style={{ margin: '8px 0 4px' }}>{sessionInfo?.customerName || "Khách vãng lai"}</Title>
+                            {renderMemberTag()}
+                        </div>
+
+                        <Divider style={{ margin: '4px 0' }} />
+
+                        <Row gutter={[8, 8]}>
+                            <Col span={12}>
+                                <Text type="secondary" style={{ fontSize: '12px' }}><CalendarOutlined /> Booking</Text>
+                                <div>{sessionInfo?.bookingStatus === 'ACTIVE' ? <Tag color="success" style={{ margin: 0 }}>ACTIVE</Tag> : <Tag style={{ margin: 0 }}>{sessionInfo?.bookingStatus || 'NONE'}</Tag>}</div>
+                            </Col>
+                            <Col span={12}>
+                                <Text type="secondary" style={{ fontSize: '12px' }}><HomeOutlined /> Room/Code</Text>
+                                <div style={{ fontWeight: 'bold' }}>{sessionInfo?.bookingCode || "N/A"}</div>
+                            </Col>
+                            <Col span={24} style={{ marginTop: 8 }}>
+                                <Text type="secondary" style={{ fontSize: '12px' }}><GlobalOutlined /> Ngôn ngữ</Text>
+                                <div><Tag color="geekblue">{sessionInfo?.clientLang?.toUpperCase() || "EN"}</Tag></div>
+                            </Col>
+                        </Row>
+
+                        <div style={{ background: '#fff7e6', padding: '10px', borderRadius: '8px', border: '1px solid #ffe7ba', marginTop: 8 }}>
+                            <Text strong style={{ color: '#d46b08', fontSize: '12px' }}>Ghi chú:</Text>
+                            <p style={{ fontSize: '11px', margin: 0 }}>
+                                Khách hạng {sessionInfo?.membershipLevel || 'MEMBER'}.
+                            </p>
+                        </div>
+                    </Space>
+                </Card>
+            </Col>
+        </Row>
     );
 }
