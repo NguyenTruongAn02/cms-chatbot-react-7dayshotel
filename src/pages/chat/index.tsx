@@ -56,7 +56,7 @@ export default function ChatSessionPage() {
 
     useEffect(() => {
         load();
-        const interval = setInterval(load, 10000);
+        const interval = setInterval(load, 60000);
         return () => clearInterval(interval);
     }, []);
 
