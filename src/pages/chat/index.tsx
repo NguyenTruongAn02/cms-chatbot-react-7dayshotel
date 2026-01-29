@@ -10,7 +10,9 @@ import {
     UserOutlined,
     CalendarOutlined,
     CrownOutlined,
-    InfoCircleOutlined
+    InfoCircleOutlined,
+    SketchOutlined,
+    SafetyCertificateOutlined
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { ChatSession } from "@/utils/types/chat";
@@ -21,10 +23,41 @@ const { Title, Text } = Typography;
 // Helper để định dạng màu sắc theo hạng thành viên
 const getMembershipColor = (level: string) => {
     switch (level?.toUpperCase()) {
-        case 'GOLD': return { color: '#faad14', bg: '#fffbe6', border: '#ffe58f', icon: <CrownOutlined /> };
-        case 'SILVER': return { color: '#8c8c8c', bg: '#f5f5f5', border: '#d9d9d9', icon: <UserOutlined /> };
-        case 'PLATINUM': return { color: '#722ed1', bg: '#f9f0ff', border: '#d3adf7', icon: <CrownOutlined /> };
-        default: return { color: '#1677ff', bg: '#e6f4ff', border: '#91caff', icon: <UserOutlined /> };
+        case 'DIAMOND': 
+            return { 
+                color: '#722ed1', 
+                bg: '#f9f0ff',    
+                border: '#d3adf7', 
+                icon: <SketchOutlined /> 
+            };
+        case 'PLATINUM': 
+            return { 
+                color: '#13c2c2', 
+                bg: '#e6fffb',    
+                border: '#87e8de', 
+                icon: <SafetyCertificateOutlined /> 
+            };
+        case 'GOLD': 
+            return { 
+                color: '#d48806', 
+                bg: '#fffbe6', 
+                border: '#ffe58f', 
+                icon: <CrownOutlined /> 
+            };
+        case 'SILVER': 
+            return { 
+                color: '#595959', 
+                bg: '#f5f5f5', 
+                border: '#d9d9d9', 
+                icon: <UserOutlined /> 
+            };
+        default: 
+            return { 
+                color: '#0958d9', 
+                bg: '#e6f4ff', 
+                border: '#91caff', 
+                icon: <UserOutlined /> 
+            };
     }
 };
 

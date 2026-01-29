@@ -9,7 +9,10 @@ import {
     CrownOutlined,
     CalendarOutlined,
     HomeOutlined,
-    GlobalOutlined
+    GlobalOutlined,
+    SketchOutlined,
+    TrophyOutlined,
+    StarOutlined,
 } from "@ant-design/icons";
 import { ChatMessage, ChatSession } from "@/utils/types/chat";
 import { ChatService } from "@/api/chatApi";
@@ -92,12 +95,40 @@ export default function ChatRoomPage() {
 
     const renderMemberTag = () => {
         const level = sessionInfo?.membershipLevel?.toUpperCase();
-        if (level === 'GOLD') return <Tag color="gold" icon={<CrownOutlined />}>GOLD</Tag>;
-        if (level === 'SILVER') return <Tag color="default">SILVER</Tag>;
-        return <Tag color="blue">MEMBER</Tag>;
-    };
 
-    
+        switch (level) {
+            case 'DIAMOND':
+                return (
+                    <Tag color="purple" icon={<SketchOutlined />}>
+                        DIAMOND
+                    </Tag>
+                );
+            case 'PLATINUM':
+                return (
+                    <Tag color="cyan" icon={<TrophyOutlined />}>
+                        PLATINUM
+                    </Tag>
+                );
+            case 'GOLD':
+                return (
+                    <Tag color="gold" icon={<CrownOutlined />}>
+                        GOLD
+                    </Tag>
+                );
+            case 'SILVER':
+                return (
+                    <Tag color="silver" icon={<StarOutlined />}>
+                        SILVER
+                    </Tag>
+                );
+            default:
+                return (
+                    <Tag color="blue">
+                        MEMBER
+                    </Tag>
+                );
+        }
+    };
 
     return (
         <Row gutter={[16, 16]} style={{ height: 'calc(100vh - 120px)', margin: 0 }}>
