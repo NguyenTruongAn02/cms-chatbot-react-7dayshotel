@@ -15,7 +15,8 @@ export interface ChatSession {
 
     customerId?: number | null;
     customerName?: string | null;
-    membershipLevel?: string | null; 
+    customerEmail?: string | null;
+    membershipLevel?: string | null;
 
     bookingStatus: BookingStatus;
     bookingCode?: string | null;

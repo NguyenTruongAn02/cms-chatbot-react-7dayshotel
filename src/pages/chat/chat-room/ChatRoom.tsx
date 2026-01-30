@@ -78,7 +78,7 @@ export default function ChatRoomPage() {
         if (!sessionInfo?.id) return message.warning("Không tìm thấy ID phiên chat!");
         Modal.confirm({
             title: 'Kết thúc hỗ trợ?',
-            content: `Xác nhận đóng phiên chat của khách ${sessionInfo?.customerName || sessionCode}.`,
+            content: `Xác nhận đóng phiên chat của khách ${sessionInfo?.customerName || sessionInfo?.customerEmail || sessionCode}.`,
             okText: 'Đóng phòng',
             okType: 'danger',
             onOk: async () => {
@@ -150,7 +150,7 @@ export default function ChatRoomPage() {
                             <Avatar size="small" style={{ backgroundColor: sessionInfo?.membershipLevel === 'GOLD' ? '#faad14' : '#1677ff' }} icon={<UserOutlined />} />
                             <div>
                                 <Text strong style={{ fontSize: '14px', display: 'block', lineHeight: '1.2' }}>
-                                    {sessionInfo?.customerName || "Khách vãng lai"}
+                                    {sessionInfo?.customerName || sessionInfo?.customerEmail || "Khách vãng lai"}
                                 </Text>
                                 <Badge status="success" text={<Text style={{ fontSize: '10px' }} type="secondary">Online</Text>} />
                             </div>
@@ -204,7 +204,7 @@ export default function ChatRoomPage() {
                     <Space direction="vertical" style={{ width: '100%' }} size={12}>
                         <div style={{ textAlign: 'center' }}>
                             <Avatar size={48} icon={<UserOutlined />} style={{ backgroundColor: '#f0f0f0', color: '#bfbfbf' }} />
-                            <Title level={5} style={{ margin: '8px 0 4px' }}>{sessionInfo?.customerName || "Khách vãng lai"}</Title>
+                            <Title level={5} style={{ margin: '8px 0 4px' }}>{sessionInfo?.customerName || sessionInfo?.customerEmail || "Khách vãng lai"}</Title>
                             {renderMemberTag()}
                         </div>
 

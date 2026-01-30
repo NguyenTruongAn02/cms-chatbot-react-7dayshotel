@@ -89,7 +89,7 @@ export default function ChatSessionPage() {
 
     useEffect(() => {
         load();
-        const interval = setInterval(load, 60000);
+        const interval = setInterval(load, 20000);
         return () => clearInterval(interval);
     }, []);
 
@@ -152,7 +152,7 @@ export default function ChatSessionPage() {
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
                                     <Space direction="vertical" size={0}>
                                         <Text strong style={{ fontSize: '16px', display: 'block' }}>
-                                            {s.customerName || "Khách vãng lai"}
+                                            {s.customerName || s.customerEmail || "Khách vãng lai"}
                                         </Text>
                                         <Text type="secondary" style={{ fontSize: '12px' }}>#{s.bookingCode || 'N/A'}</Text>
                                     </Space>
