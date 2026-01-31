@@ -16,4 +16,8 @@ export const ChatService = {
     closeSession(sessionId: number) {
         return api.post(`/chat/session/${sessionId}/close`);
     },
+    // Đóng phòng chat
+    cleanSession() {
+        return api.get(`/chat/deleteOldSession`);
+    },
 };

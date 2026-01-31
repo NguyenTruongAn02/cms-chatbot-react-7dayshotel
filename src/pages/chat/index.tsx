@@ -20,48 +20,46 @@ import { ChatService } from "@/api/chatApi";
 
 const { Title, Text } = Typography;
 
-// Helper để định dạng màu sắc theo hạng thành viên
 const getMembershipColor = (level: string) => {
     switch (level?.toUpperCase()) {
-        case 'DIAMOND': 
-            return { 
-                color: '#722ed1', 
-                bg: '#f9f0ff',    
-                border: '#d3adf7', 
-                icon: <SketchOutlined /> 
+        case 'DIAMOND':
+            return {
+                color: '#722ed1',
+                bg: '#f9f0ff',
+                border: '#d3adf7',
+                icon: <SketchOutlined />
             };
-        case 'PLATINUM': 
-            return { 
-                color: '#13c2c2', 
-                bg: '#e6fffb',    
-                border: '#87e8de', 
-                icon: <SafetyCertificateOutlined /> 
+        case 'PLATINUM':
+            return {
+                color: '#13c2c2',
+                bg: '#e6fffb',
+                border: '#87e8de',
+                icon: <SafetyCertificateOutlined />
             };
-        case 'GOLD': 
-            return { 
-                color: '#d48806', 
-                bg: '#fffbe6', 
-                border: '#ffe58f', 
-                icon: <CrownOutlined /> 
+        case 'GOLD':
+            return {
+                color: '#d48806',
+                bg: '#fffbe6',
+                border: '#ffe58f',
+                icon: <CrownOutlined />
             };
-        case 'SILVER': 
-            return { 
-                color: '#595959', 
-                bg: '#f5f5f5', 
-                border: '#d9d9d9', 
-                icon: <UserOutlined /> 
+        case 'SILVER':
+            return {
+                color: '#595959',
+                bg: '#f5f5f5',
+                border: '#d9d9d9',
+                icon: <UserOutlined />
             };
-        default: 
-            return { 
-                color: '#0958d9', 
-                bg: '#e6f4ff', 
-                border: '#91caff', 
-                icon: <UserOutlined /> 
+        default:
+            return {
+                color: '#0958d9',
+                bg: '#e6f4ff',
+                border: '#91caff',
+                icon: <UserOutlined />
             };
     }
 };
 
-// Helper để định dạng trạng thái đặt phòng
 const getBookingTag = (status: string) => {
     switch (status) {
         case 'ACTIVE': return <Tag color="success">ĐANG Ở (ACTIVE)</Tag>;
@@ -79,6 +77,7 @@ export default function ChatSessionPage() {
     const load = async () => {
         try {
             const data = await ChatService.getOpenSessions();
+            await ChatService.getOpenSessions();
             setSessions(data);
         } catch (error) {
             console.error("Error: ", error);
@@ -86,6 +85,19 @@ export default function ChatSessionPage() {
             setLoading(false);
         }
     };
+
+    const cleanSession = async () => {
+        try {
+            await ChatService.cleanSession();
+        } catch (error) {
+            console.error("Error: ", error);
+        } finally {
+        }
+    };
+
+    useEffect(() => {
+        cleanSession();
+    }, []);
 
     useEffect(() => {
         load();
@@ -119,10 +131,10 @@ export default function ChatSessionPage() {
                         </Space>
                     </Col>
                     <Col>
-                        <Statistic 
-                            title="Yêu cầu chờ xử lý" 
-                            value={sessions.length} 
-                            valueStyle={{ color: '#cf1322', fontWeight: 'bold' }} 
+                        <Statistic
+                            title="Yêu cầu chờ xử lý"
+                            value={sessions.length}
+                            valueStyle={{ color: '#cf1322', fontWeight: 'bold' }}
                         />
                     </Col>
                 </Row>
@@ -130,7 +142,7 @@ export default function ChatSessionPage() {
 
             <Row gutter={[20, 20]}>
                 {sessions.map((s) => {
-                    const memberTheme = getMembershipColor(s.membershipLevel|| "");
+                    const memberTheme = getMembershipColor(s.membershipLevel || "");
                     return (
                         <Col key={s.id} xs={24} sm={12} lg={8} xl={6}>
                             <Card
@@ -138,9 +150,9 @@ export default function ChatSessionPage() {
                                 style={{ borderRadius: '16px', borderTop: `4px solid ${memberTheme.color}` }}
                                 bodyStyle={{ padding: '20px' }}
                                 actions={[
-                                    <Button 
-                                        type="primary" 
-                                        block 
+                                    <Button
+                                        type="primary"
+                                        block
                                         icon={<ArrowRightOutlined />}
                                         onClick={() => navigate(`/chat/${s.sessionCode}`, { state: { session: s } })}
                                         style={{ width: '90%', borderRadius: '8px' }}
